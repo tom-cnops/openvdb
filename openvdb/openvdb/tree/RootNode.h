@@ -3409,7 +3409,7 @@ template<typename OtherRootNodeType, typename VisitorOp>
 inline void
 RootNode<ChildT>::visit2(OtherRootNodeType& other, VisitorOp& op) const
 {
-    doVisit2<const RootNode, OtherRootNodeType, VisitorOp, ChildAllCIter,
+    doVisit2<const RootNode, const OtherRootNodeType, VisitorOp, ChildAllCIter,
         typename OtherRootNodeType::ChildAllCIter>(*this, other, op);
 }
 
@@ -3432,9 +3432,9 @@ RootNode<ChildT>::doVisit2(RootNodeT& self, OtherRootNodeT& other, VisitorOp& op
     // The two nodes are required to have corresponding table entries,
     // but since that might require background tiles to be added to one or both,
     // and the nodes might be const, we operate on shallow copies of the nodes instead.
-    RootNodeT copyOfSelf(self.mBackground);
+    typename std::remove_const<RootNodeT>::type copyOfSelf(self.mBackground);
     copyOfSelf.mTable = self.mTable;
-    OtherRootNodeT copyOfOther(other.mBackground);
+    typename std::remove_const<OtherRootNodeT>::type copyOfOther(other.mBackground);
     copyOfOther.mTable = other.mTable;
 
     // Add background tiles to both nodes as needed.
@@ -3446,8 +3446,11 @@ RootNode<ChildT>::doVisit2(RootNodeT& self, OtherRootNodeT& other, VisitorOp& op
         copyOfOther.findOrAddCoord(*i);
     }
 
-    ChildAllIterT iter = copyOfSelf.beginChildAll();
-    OtherChildAllIterT otherIter = copyOfOther.beginChildAll();
+    // beginChildAll can return a const iterator if the node it is called on is const
+    RootNodeT& constQualifiedCopyOfSelf = copyOfSelf;
+    OtherRootNodeT& constQualifiedCopyOfOther = copyOfOther;
+    ChildAllIterT iter = constQualifiedCopyOfSelf.beginChildAll();
+    OtherChildAllIterT otherIter = constQualifiedCopyOfOther.beginChildAll();
 
     for ( ; iter && otherIter; ++iter, ++otherIter)
     {
